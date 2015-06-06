@@ -1,6 +1,5 @@
 module NNN
 
-using Compat
 using InplaceOps
 using Base.LinAlg.BLAS
 
