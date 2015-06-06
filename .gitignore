@@ -1,3 +1,4 @@
+.envrc
 .juliahistory
 *.jl.cov
 *.jl.mem
