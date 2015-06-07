@@ -38,3 +38,32 @@ function drop!(drop::Dropout, X::Signal)
         X[row, col] = X[row, col] * drop.scale * drop.mask[row, col]
     end
 end
+
+# ----------------------------------------------------------------
+immutable GradientClip <: Filter
+    enabled::Bool
+    threshold::Float32
+    GradientClip(threshold) = new(true, threshold)
+end
+
+function forward!(grad::GradientClip, l::Layer)
+    # NO-OP
+end
+
+function backprop!(grad::GradientClip, l::Layer)
+    gradient_clip!(l.ΔW, threshold)
+end
+
+function backprop!(grad::GradientClip, l::RecurrentLayer)
+    gradient_clip!(l.ΔW, threshold)
+    gradient_clip!(l.ΔWh, threshold)
+end
+
+function gradient_clip!(g::Weight, limit::Float32)
+    nm = norm(g,1)
+    if nm > limit
+        rate = limit / nm
+        ng = @in1! g .* rate
+    end
+    g
+end

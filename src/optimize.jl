@@ -22,32 +22,18 @@ function update_bias!(sgd::Optimizer, b, Δb)
     nb = @in1! b   .+ Δb
 end
 
-function gradient_clip!(g::Weight, limit::Float32)
-    nm = norm(g,1)
-    if nm > limit
-        rate = limit / nm
-        ng = @in1! g .* rate
-    end
-    g
-end
-
 # --------------------------------------------------------------------------------------------
 immutable SGD <: Optimizer
     λ::Float32            # weight decrese
     ε::Float32            # learning rate
-    gradient_clip::Float32 # gradient clipping threshold
 
-    function SGD(;λ=0.01, ε=1.0, gradient_clip=0.0)
-        new(λ, ε, gradient_clip)
+    function SGD(;λ=0.01, ε=1.0)
+        new(λ, ε)
     end
 end
 
 function update_weight!(sgd::SGD, W, ΔW)
     ε=sgd.ε; λ=sgd.λ
-
-    if sgd.gradient_clip > 0.0f0
-        gradient_clip!(ΔW, sgd.gradient_clip)
-    end
 
     @inbounds for col=1:size(W,2), row=1:size(W,1)
         ΔW[row, col] += W[row, col] * λ
