@@ -31,7 +31,8 @@ function rnn_train(xtrn, ytrn, xtst, ytst, iter)
     net = NNN.Network(batch_size)
     NNN.push!(net,
              NNN.SimpleRecurrentLayer(batch_size, input_size, hidden_size;
-                                     activation=NNN.LeakyRelu()),
+                                      activation=NNN.LeakyRelu(),
+                                      post_filters=NNN.Filter[ NNN.GradientClip(10.0f0) ]),
              NNN.AdaGrad(input_size, hidden_size;
                         ε=0.1,
                         μ=0.05,
@@ -39,7 +40,7 @@ function rnn_train(xtrn, ytrn, xtst, ytst, iter)
              NNN.AdaGrad(hidden_size, hidden_size;
                         ε=0.1,
                         μ=0.05,
-                        λ=0.000001))
+                        λ=0.0000001))
     NNN.push!(net,
              NNN.OutputLayer(batch_size, hidden_size, output_size;
                              activation=NNN.IdentityAct(),

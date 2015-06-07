@@ -85,7 +85,7 @@ immutable SimpleRecurrentLayer <: RecurrentLayer
     function SimpleRecurrentLayer(batch_size, x_size, h_size; activation=LeakyRelu(), post_filters=Filter[])
         w_in  = randn(h_size, x_size)  * 0.1
         dw_in = zeros(h_size, x_size)
-        w_h   = eye(h_size) * 0.95
+        w_h   = eye(h_size) * 0.98
         dw_h  = zeros(h_size, h_size)
         b     = zeros(h_size)
         db    = zeros(h_size)
