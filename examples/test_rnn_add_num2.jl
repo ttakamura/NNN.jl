@@ -42,11 +42,11 @@ function rnn_train(xtrn, ytrn, xtst, ytst, iter)
                         λ=0.000001))
     NNN.push!(net,
              NNN.OutputLayer(batch_size, hidden_size, output_size;
-                            activation=NNN.IdentityAct(),
-                            loss=NNN.rnn_quadratic_cost),
+                             activation=NNN.IdentityAct(),
+                             loss=NNN.rnn_quadratic_cost),
+                             post_filters=[NNN.GradientClip(10.0f0)]
              NNN.SGD(;λ=0.000001,
-                    ε=0.05,
-                    gradient_clip=10.0f0))
+                    ε=0.05))
 
     @time NNN.train(xtrn, ytrn, net; iter=iter, batch_size=batch_size)
     errors = NNN.test(xtst,  ytst, net; batch_size=batch_size)
