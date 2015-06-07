@@ -39,7 +39,15 @@ function forward_activation!(l::SimpleRecurrentLayer)
     end
 end
 
-# -------------------------------------------
+# -----------------------------------------------------------
+function backprop!(net::Network, X::Signal, Y::Signal)
+    forward!(net, X)
+    for i in length(net.layers):-1:1
+        backprop!(net.layers[i], Y)
+        Y = net.layers[i]
+    end
+end
+
 function backprop!(l::OutputLayer, Y::Signal)
     copy!(l.ΔE, l.loss(:diff, l, Y, l.Z))
     backprop!(l)
@@ -70,23 +78,10 @@ function backprop!(l::SimpleRecurrentLayer, l2::Layer)
     @into! l.ΔWh = l.ΔE * l.Z'
     _ = @in1! l.ΔWh ./ l.batch_size
     backprop!(l)
-
-    if maximum(l.ΔE) > 10000.0f0
-        @show maximum(l.ΔE), maximum(l2.ΔE)
-        error("Large recurrent backward")
-    end
 end
 
 function backprop!(l::Layer)
     backprop!(l.post_filters, l)
     copy!(l.ΔW, ((l.ΔE * l.X')               ./ l.batch_size))
     copy!(l.Δb, ((l.ΔE * ones(l.batch_size)) ./ l.batch_size))
-end
-
-function backprop!(net::Network, X::Signal, Y::Signal)
-    forward!(net, X)
-    for i in length(net.layers):-1:1
-        backprop!(net.layers[i], Y)
-        Y = net.layers[i]
-    end
 end
