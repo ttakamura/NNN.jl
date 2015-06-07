@@ -20,6 +20,14 @@ function backprop!(filters::Vector{Filter}, l::Layer; time_step=0)
     end
 end
 
+function forward!(f::Filter, l::Layer, context::FilterContext)
+    # No-op
+end
+
+function backprop!(f::Filter, l::Layer, context::FilterContext)
+    # No-op
+end
+
 # ----------------------------------------------------------------
 immutable Dropout <: Filter
     enabled::Bool
@@ -60,14 +68,8 @@ immutable GradientClip <: Filter
     GradientClip(threshold) = new(true, threshold)
 end
 
-function forward!(grad::GradientClip, l::Layer, context::FilterContext)
-end
-
 function backprop!(grad::GradientClip, l::Layer, context::FilterContext)
     gradient_clip!(l.ΔE, grad.threshold)
-end
-
-function forward!(grad::GradientClip, l::RecurrentLayer, context::FilterContext)
 end
 
 function backprop!(grad::GradientClip, l::RecurrentLayer, context::FilterContext)
