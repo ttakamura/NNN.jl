@@ -44,7 +44,7 @@ function rnn_train(xtrn, ytrn, xtst, ytst, iter)
              NNN.OutputLayer(batch_size, hidden_size, output_size;
                              activation=NNN.IdentityAct(),
                              loss=NNN.rnn_quadratic_cost,
-                             post_filters=[NNN.GradientClip(10.0f0)])
+                             post_filters=NNN.Filter[ NNN.GradientClip(10.0f0) ]),
              NNN.SGD(;λ=0.000001,
                     ε=0.05))
 

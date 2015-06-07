@@ -51,12 +51,12 @@ function forward!(grad::GradientClip, l::Layer)
 end
 
 function backprop!(grad::GradientClip, l::Layer)
-    gradient_clip!(l.ΔW, threshold)
+    gradient_clip!(l.ΔW, grad.threshold)
 end
 
 function backprop!(grad::GradientClip, l::RecurrentLayer)
-    gradient_clip!(l.ΔW, threshold)
-    gradient_clip!(l.ΔWh, threshold)
+    gradient_clip!(l.ΔW,  grad.threshold)
+    gradient_clip!(l.ΔWh, grad.threshold)
 end
 
 function gradient_clip!(g::Weight, limit::Float32)
