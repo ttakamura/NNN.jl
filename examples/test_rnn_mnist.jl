@@ -1,6 +1,6 @@
 # include(Pkg.dir("KUnet/test/mnist.jl"))
 
-reload("/Users/tatsuya/src/github.com/ttakamura/julia-sandbox/deep_nn/deep_nn.jl")
+reload("src/NNN.jl")
 
 const batch_size  = 784
 const input_size  = 1

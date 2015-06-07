@@ -1,6 +1,6 @@
-reload("/Users/tatsuya/src/github.com/ttakamura/julia-sandbox/deep_nn/deep_nn.jl")
+reload("src/NNN.jl")
 
-const batch_size  = 30
+const batch_size  = 20
 const input_size  = 2
 const output_size = 1
 const hidden_size = 40
@@ -67,7 +67,7 @@ function profile_rnn(xtrn, ytrn, xtst, ytst, iter)
     (net,errors)
 end
 
-xtrn, ytrn = toy_data(10000);
+xtrn, ytrn = toy_data(5000);
 xtst, ytst = toy_data(1000);
 
 net,errors = profile_rnn(xtrn, ytrn, xtst, ytst, 1); errors
