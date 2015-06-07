@@ -14,16 +14,17 @@ function forward!(l::Layer, X::Signal)
 
     forward_activation!(l)
 
-    forward!(l.post_filters, l)
     l.Z
 end
 
 function forward_activation!(l::Layer)
     forward!(l.activation, l.U, l.Z)
+    forward!(l.post_filters, l)
 end
 
 function forward_activation!(l::SimpleRecurrentLayer)
     forward!(l.activation, sub(l.U,:,1), sub(l.Z,:,1))
+    forward!(l.post_filters, l; time_step=1)
 
     @inbounds for t in 2:size(l.U, 2)
         l.Uh[:,t] = l.Wh * l.Z[:,t-1]
@@ -31,6 +32,7 @@ function forward_activation!(l::SimpleRecurrentLayer)
             l.U[i,t] += l.Uh[i,t]
         end
         forward!(l.activation, sub(l.U,:,t), sub(l.Z,:,t))
+        forward!(l.post_filters, l; time_step=t)
     end
 
     if maximum(l.Z) > 100000.0f0
@@ -50,6 +52,7 @@ end
 
 function backprop!(l::OutputLayer, Y::Signal)
     copy!(l.ΔE, l.loss(:diff, l, Y, l.Z))
+    backprop!(l.post_filters, l)
     backprop!(l)
 end
 
@@ -57,6 +60,7 @@ function backprop!(l::HiddenLayer, l2::Layer)
     Δout = l2.W' * l2.ΔE
     backward!(l.activation, l.U, l.Zd)
     copy!(l.ΔE, (l.Zd .* Δout))
+    backprop!(l.post_filters, l)
     backprop!(l)
 end
 
@@ -66,13 +70,16 @@ function backprop!(l::SimpleRecurrentLayer, l2::Layer)
 
     # Recurrent
     l.ΔE[:,end:end] = l.Zd[:,end:end] .* Δout[:,end:end]
+    backprop!(l.post_filters, l; time_step=size(l.ΔE,2))
+
     Δfuture = zeros(Float32, size(l.Wh,1))
 
-    @inbounds for t in (size(l.U, 2)-1):-1:1
+    @inbounds for t in (size(l.ΔE,2)-1):-1:1
         @into! Δfuture = l.Wh' * l.ΔE[:,t+1]
         @inbounds for i in 1:size(l.Zd,1)
             l.ΔE[i,t] = l.Zd[i,t] .* (Δout[i,t] + Δfuture[i])
         end
+        backprop!(l.post_filters, l; time_step=t)
     end
 
     @into! l.ΔWh = l.ΔE * l.Z'
@@ -81,7 +88,6 @@ function backprop!(l::SimpleRecurrentLayer, l2::Layer)
 end
 
 function backprop!(l::Layer)
-    backprop!(l.post_filters, l)
     copy!(l.ΔW, ((l.ΔE * l.X')               ./ l.batch_size))
     copy!(l.Δb, ((l.ΔE * ones(l.batch_size)) ./ l.batch_size))
 end

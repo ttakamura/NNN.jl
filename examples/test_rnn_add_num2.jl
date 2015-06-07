@@ -73,3 +73,4 @@ xtst, ytst = toy_data(1000);
 net,errors = profile_rnn(xtrn, ytrn, xtst, ytst, 1); errors
 
 # NNN.train(xtrn, ytrn, net; iter=10, batch_size=batch_size)
+# t=(0*batch_size)+1; r=t:t+batch_size-1; x=xtst[:,r]; y=ytst[:,r]; [NNN.forward!(net, x); y]'

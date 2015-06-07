@@ -1,15 +1,21 @@
-function forward!(filters::Vector{Filter}, l::Layer)
+immutable FilterContext
+    time_step::Int64
+end
+
+function forward!(filters::Vector{Filter}, l::Layer; time_step=0)
+    context = FilterContext(time_step)
     for i in 1:length(filters)
         if filters[i].enabled
-            forward!(filters[i], l)
+            forward!(filters[i], l, context)
         end
     end
 end
 
-function backprop!(filters::Vector{Filter}, l::Layer)
+function backprop!(filters::Vector{Filter}, l::Layer; time_step=0)
+    context = FilterContext(time_step)
     for i in 1:length(filters)
         if filters[i].enabled
-            backprop!(filters[i], l)
+            backprop!(filters[i], l, context)
         end
     end
 end
@@ -23,14 +29,22 @@ immutable Dropout <: Filter
     Dropout(drop) = new(true, drop, 1.0/(1.0 - drop))
 end
 
-function forward!(drop::Dropout, l::Layer)
+function forward!(drop::Dropout, l::Layer, context::FilterContext)
     mask = (rand(size(l.Z)) .> drop.drop)
     copy!(drop.mask, mask)
     drop!(drop, l.Z)
 end
 
-function backprop!(drop::Dropout, l::Layer)
+function backprop!(drop::Dropout, l::Layer, context::FilterContext)
     drop!(drop, l.ΔE)
+end
+
+function forward!(drop::Dropout, l::RecurrentLayer, context::FilterContext)
+    error("Not yet implemented")
+end
+
+function backprop!(drop::Dropout, l::RecurrentLayer, context::FilterContext)
+    error("Not yet implemented")
 end
 
 function drop!(drop::Dropout, X::Signal)
@@ -46,20 +60,22 @@ immutable GradientClip <: Filter
     GradientClip(threshold) = new(true, threshold)
 end
 
-function forward!(grad::GradientClip, l::Layer)
-    # NO-OP
+function forward!(grad::GradientClip, l::Layer, context::FilterContext)
 end
 
-function backprop!(grad::GradientClip, l::Layer)
-    gradient_clip!(l.ΔW, grad.threshold)
+function backprop!(grad::GradientClip, l::Layer, context::FilterContext)
+    gradient_clip!(l.ΔE, grad.threshold)
 end
 
-function backprop!(grad::GradientClip, l::RecurrentLayer)
-    gradient_clip!(l.ΔW,  grad.threshold)
-    gradient_clip!(l.ΔWh, grad.threshold)
+function forward!(grad::GradientClip, l::RecurrentLayer, context::FilterContext)
 end
 
-function gradient_clip!(g::Weight, limit::Float32)
+function backprop!(grad::GradientClip, l::RecurrentLayer, context::FilterContext)
+    t = context.time_step
+    gradient_clip!(sub(l.ΔE,:,t:t),  grad.threshold)
+end
+
+function gradient_clip!(g, limit::Float32)
     nm = norm(g,1)
     if nm > limit
         rate = limit / nm
