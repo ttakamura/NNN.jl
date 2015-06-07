@@ -12,20 +12,20 @@ function forward!(l::Layer, X::Signal)
     @into! l.U = l.W * X
     u = @in1! l.U .+ l.b
 
-    forward!(l.activation, l.U, l.Z)
+    forward_activation!(l)
+
     forward!(l.post_filters, l)
     l.Z
 end
 
-function forward!(l::SimpleRecurrentLayer, X::Signal)
-    copy!(l.X, X)
-    @into! l.U = l.W * X
-    u = @in1! l.U .+ l.b
+function forward_activation!(l::Layer)
+    forward!(l.activation, l.U, l.Z)
+end
 
-    # Recurrent
+function forward_activation!(l::SimpleRecurrentLayer)
     forward!(l.activation, sub(l.U,:,1), sub(l.Z,:,1))
 
-    @inbounds for t in 2:size(X, 2)
+    @inbounds for t in 2:size(l.U, 2)
         l.Uh[:,t] = l.Wh * l.Z[:,t-1]
         @inbounds for i in 1:size(l.Uh,1)
             l.U[i,t] += l.Uh[i,t]
@@ -33,25 +33,22 @@ function forward!(l::SimpleRecurrentLayer, X::Signal)
         forward!(l.activation, sub(l.U,:,t), sub(l.Z,:,t))
     end
 
-    if maximum(l.Z) > 1000.0f0
+    if maximum(l.Z) > 100000.0f0
         @show maximum(l.Z), maximum(l.U), maximum(l.Uh)
         error("Large recurrent forward")
     end
-
-    forward!(l.post_filters, l)
-    l.Z
 end
 
 # -------------------------------------------
+function backprop!(l::OutputLayer, Y::Signal)
+    copy!(l.ΔE, l.loss(:diff, l, Y, l.Z))
+    backprop!(l)
+end
+
 function backprop!(l::HiddenLayer, l2::Layer)
     Δout = l2.W' * l2.ΔE
     backward!(l.activation, l.U, l.Zd)
     copy!(l.ΔE, (l.Zd .* Δout))
-    backprop!(l)
-end
-
-function backprop!(l::OutputLayer, Y::Signal)
-    copy!(l.ΔE, l.loss(:diff, l, Y, l.Z))
     backprop!(l)
 end
 
